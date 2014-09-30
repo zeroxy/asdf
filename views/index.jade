@@ -1,0 +1,7 @@
+extends layout
+
+block content
+  form(action='/login', method='post')
+    input(type='text',name='id', value='admin1')
+    input(type='password',name='pass', value='a')
+    input(type='submit')

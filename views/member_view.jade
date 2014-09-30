@@ -1,0 +1,15 @@
+extends layout
+
+block content
+  table
+    thead
+      tr
+        th id
+        th group
+    tbody
+      each val in member
+        tr
+          td= val.id
+          td
+            each groupval in val.group
+              = groupval
