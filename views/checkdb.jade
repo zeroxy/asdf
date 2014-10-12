@@ -1,0 +1,23 @@
+extends layout
+
+block content
+  table
+    thead
+      tr
+        th id
+        th group
+        th give authorize
+    tbody
+      each member in members
+        tr
+          td= member.id
+          td
+            each groupval in member.group
+              a(href='/popAuth/'+groupval+'/'+member.id)= groupval
+              |&nbsp
+          td
+            if member.group.indexOf('admin')==-1
+              a(href='/giveAuth/admin/'+member.id) let's admin
+              br
+            if member.group.indexOf('speaker')==-1
+              a(href='/giveAuth/speaker/'+member.id) let's spekaer

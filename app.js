@@ -49,7 +49,8 @@ var memberSchema = new Schema({
   id : String,
   pass : String,
   join_date : Date,
-  group : [String]
+  group : [String],
+  coupon : [String]
 });
 
 var memberModel = mongoose.model('member', memberSchema);
@@ -71,27 +72,46 @@ var memberModel = mongoose.model('member', memberSchema);
 //app.get('/', routes.index);
 //app.get('/users', user.list);
 var is_admin = function (req){
+  if(!req.session.userid)
+    return false;
   memberModel.findOne({"id":req.session.userid}, function(err,docs){
-    if(docs.group.indexOf("admin")!==-1)
-      return true;
-    else
+    if(!err && docs!=null){
+      if(docs.group.indexOf("admin")!==-1)
+        return true;
+      else
+        return false;
+    } else {
       return false;
+    }
   });
 }
 var is_speaker = function (req){
+  if(!req.session.userid)
+    return false;
   memberModel.findOne({"id":req.session.userid}, function(err,docs){
-    if(docs.group.indexOf("speaker")!==-1)
-      return true;
-    else
+    if(!err && docs!=null){
+      if(docs.group.indexOf("speaker")!==-1)
+        return true;
+      else
+        return false;
+    } else {
       return false;
+    }
   });
+  
 }
 var is_attendee = function (req){
+  if(!req.session.userid)
+    return false;
   memberModel.findOne({"id":req.session.userid}, function(err,docs){
-    if(docs.group.indexOf("attendee")!==-1)
-      return true;
-    else
+    if(!err && docs!=null){
+      if(docs.group.indexOf("attendee")!==-1)
+        return true;
+      else
+        return false;
+    } else {
       return false;
+    }
   });
 }
 var login_correct = function (req){
@@ -121,9 +141,9 @@ app.post('/prejoin', function (req, res){
   memberr.save(function (err){
     if(!err){
       console.log('success',memberr);
-      res.send('asdfasd');
+      res.redirect('/');
     } else {
-      res.send('fail : ',memberr);
+      res.redirect('/prejoin');
     }
   });
 });
@@ -159,17 +179,113 @@ app.get('/logout', function (req, res){
 });
 
 app.get('/coupon', function (req, res) {
-  res.send("쿠폰 화면 입니다" );
+  memberModel.findOne({id:req.param('userid')}, function(err, docs){
+    
+  }
+  res.render("coupon");
 });
-
+app.post('/coupon', function (req, res){
+  if(!req,session.userid)
+    res.redirect('/');
+  console.log(req.session.userid+" -> "+req.param('userid')+"쿠폰을 준다!!");
+  if(is_admin(req) || is_speaker(req)){
+    if(req.session.userid == req.param('userid')){
+      console.log("아이고 부끄러워라!! 본인한테 쿠폰주면 반칙 : "+req.param('userid'));
+    } else {
+      memberModel.findOne({id:req.param('userid')}, function(err, docs){
+        if(docs.coupon.indexOf(req.session.userid) == -1)
+          docs.coupon.push(req.session.userid);
+        memberModel.update(
+          {id:req.param('userid')},
+          {$set: {coupon:docs.coupon}}, 
+          function (err){
+            console.log(err);
+            res.redirect('/coupon');
+          }
+        );
+      })
+    }
+  } else {
+    console.log(req.session.userid+"님께서 줄수도 없는 쿠폰가지고 장난질 치면 주금");
+  }
+});
 
 app.get('/checkdb', function(req, res){
-  memberModel.find({}, function(err, docs){
-    console.log(docs);
-    res.send(docs);
+  if (!is_admin(req)){
+    memberModel.find({}, function(err, docs){
+      console.log(docs);
+      res.render('checkdb',{members:docs});
+    });
+  } else {
+    console.log("건방진!! 관리자도 아니면서 관리자 페이지에 접속하다니!!");
+    res.redirect('/');
+  }
+});
+app.get('/giveAuth/admin/:userid', function (req, res) {
+  console.log(req.param('userid')+"=========\n\n=========");
+  memberModel.findOne({id:req.param('userid')}, function(err, docs){
+    if(docs.group.indexOf('admin')== -1){
+      docs.group.push('admin');
+      memberModel.update(
+          {id:req.param('userid')},
+          {$set: {group:docs.group}}, 
+          function (err){
+            console.log(err);
+            res.redirect('/checkdb');
+          }
+      );
+    }
+  });
+  res.redirect('/checkdb');
+});
+app.get('/giveAuth/speaker/:userid', function (req, res) {
+  memberModel.findOne({id:req.param('userid')}, function(err, docs){
+    if(docs.group.indexOf('speaker')== -1){
+      docs.group.push('speaker');
+      memberModel.update(
+          {id:req.param('userid')},
+          {$set: {group:docs.group}}, 
+          function (err){
+            console.log(err);
+            res.redirect('/checkdb');
+          }
+      );
+    }
   });
 });
+app.get('/popAuth/admin/:userid', function (req, res) {
+  console.log(req.param('userid')+"=========\n\n=========");
+  memberModel.findOne({id:req.param('userid')}, function(err, docs){
+    docs.group.splice(docs.group.indexOf('admin'),1);
+    memberModel.update(
+        {id:req.param('userid')},
+        {$set: {group:docs.group}}, 
+        function (err){
+          console.log(err);
+          res.redirect('/checkdb');
+        }
+    );
+  });
+  res.redirect('/checkdb');
+});
+app.get('/popAuth/speaker/:userid', function (req, res) {
+  memberModel.findOne({id:req.param('userid')}, function(err, docs){
+    docs.group.splice(docs.group.indexOf('speaker'),1);
+    memberModel.update(
+        {id:req.param('userid')},
+        {$set: {group:docs.group}}, 
+        function (err){
+          console.log(err);
+          res.redirect('/checkdb');
+        }
+    );
+  });
+  
+});
 
+app.get('/popAuth/attendee/:userid', function (req, res) {
+  res.redirect('/checkdb');
+});
 /*
 app.get('/', function (req, res){
   if(!req.session.userid){
