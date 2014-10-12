@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1 여기는 첫 화면 입니다. 행사 설명이 들어가야되고, 기본은 로그인 기능이 전부일뿐입니다.
+  form(action="/login", method="post")
+    input(type='text', name='id')
+    br
+    input(type='password',name='pass')
+    br
+    input(type='submit', value='login')
